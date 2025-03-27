@@ -6,7 +6,6 @@ Utiliza streamlit para interface gráfica.
 
 Autor: Fernando sola Pereira
 """
-import random
 
 import streamlit as st
 import yfinance as yf
@@ -14,248 +13,183 @@ import pandas as pd
 import numpy as np
 from scipy.stats import t
 import matplotlib.pyplot as plt
-import plotly.express as px
 
-SEED = 42
-random.seed(SEED)
-np.random.seed(SEED)
+# # Definir o ticker da ação (por exemplo, 'PETR4.SA' para Petrobras)
+# ticker_a = 'BBSE3.SA'
+# ticker_b = 'BBAS3.SA'
 
-# Configuração da página
+# # Definir o período de análise
+# inicio = '2010-01-01'
+# fim = '2024-10-31'
+
+# # Baixar os dados históricos
+# dados_a = yf.download(ticker_a, start=inicio, end=fim)
+# dados_b = yf.download(ticker_b, start=inicio, end=fim)
+
+# # Calcular os retornos diários para dados_a
+# dados_a['Retorno'] = dados_a['Adj Close'].pct_change()
+# dados_a = dados_a.dropna()
+# retorno_medio_diario_a = dados_a['Retorno'].mean()
+# volatilidade_diaria_a = dados_a['Retorno'].std()
+
+# # Calcular os retornos diários para dados_b
+# dados_b['Retorno'] = dados_b['Adj Close'].pct_change()
+# dados_b = dados_b.dropna()
+# retorno_medio_diario_b = dados_b['Retorno'].mean()
+# volatilidade_diaria_b = dados_b['Retorno'].std()
+
+
+# print(f"Retorno médio diário da ação {ticker_a} entre {inicio} e {fim}: {retorno_medio_diario_a:.5%}")
+# print(f"Volatilidade diária da ação {ticker_a}: {volatilidade_diaria_a:.5%}")
+
+# print(f"Retorno médio diário da ação {ticker_b} entre {inicio} e {fim}: {retorno_medio_diario_b:.5%}")
+# print(f"Volatilidade diária da ação {ticker_b}: {volatilidade_diaria_b:.5%}")
+
+# # Parâmetros da distribuição t de Student para os retornos dos ativos
+# df_A = 5  # Graus de liberdade do ativo A
+# loc_A = retorno_medio_diario_a  # Média do retorno diário do ativo A
+# scale_A = volatilidade_diaria_b  # Desvio padrão do retorno diário do ativo A
+# df_B = 5  # Graus de liberdade do ativo B
+# loc_B = retorno_medio_diario_b  # Média do retorno diário do ativo B
+# scale_B = volatilidade_diaria_b  # Desvio padrão do retorno diário do ativo B
+
+# # Pesos da carteira
+# w_A = 0  # Peso do ativo A na carteira
+# w_B = 1  # Peso do ativo B na carteira
+
+# # Número de simulações de Monte Carlo
+# n_simulations = 10000
+
+# # Horizonte de tempo (em dias)
+# horizon = 30
+
+# # Simulação dos retornos diários dos ativos
+# returns_A = t.rvs(df=df_A, loc=loc_A, scale=scale_A, size=(n_simulations, horizon))
+# returns_B = t.rvs(df=df_B, loc=loc_B, scale=scale_B, size=(n_simulations, horizon))
+
+# # Cálculo dos retornos diários da carteira
+# portfolio_returns = w_A * returns_A + w_B * returns_B
+
+# # Cálculo dos retornos acumulados da carteira para o horizonte de tempo
+# cumulative_returns = np.prod(1 + portfolio_returns, axis=1) - 1
+
+# # Cálculo do VaR (95% de confiança)
+# VaR = np.percentile(cumulative_returns, 5)
+
+# # Impressão do resultado
+# print(f'VaR (95% de confiança) para {horizon} dias: {VaR:.4f}')
+
+# # Histograma dos retornos acumulados da carteira
+# plt.hist(cumulative_returns, bins=50)
+# plt.xlabel('Retorno Acumulado da Carteira')
+# plt.ylabel('Frequência')
+# plt.title(f'Distribuição dos Retornos da Carteira ({horizon} dias)')
+# plt.show()
+
+# criar um layout com 2 panels um à esquerda e um à direita. o da esquerda terá parâmetros 
+# e campos para inserção de dados e o da direita terá gráficos e resultados
 st.set_page_config(layout="wide")
+st.title('Simulações de Monte Carlo para Análise de Risco e Retorno de Portifólio de Ações')
 
-# Sidebar
 st.sidebar.header('Parâmetros')
+
+# # botao para executar a simulação
+# simular = st.sidebar.button('Simular')
 
 # Horizonte de tempo (em dias)
 horizon = st.sidebar.text_input('Horizonte de Tempo (dias)', 30)
 
-# Graus de liberdade da distribuição t de Student
+
+# Definir os graus de liberdade da distribuição t de Student
 degrees_freedom = st.sidebar.text_input('Graus de Liberdade', 5)
 
-# Nível de confiança para o VaR
+# Definir o nível de confiança para o VaR
 confidence_level = st.sidebar.text_input('Nível de Confiança', 95)
 
-# Número de simulações de Monte Carlo
-n_simulations = st.sidebar.text_input('Número de Simulações', 1000)
+# Definir o número de simulações de Monte Carlo
+n_simulations = st.sidebar.text_input('Número de Simulações', 10000)
 
-# Estabelecer um limite de 300000 na relação entre o produto de horizonte e o número de simulações
-if int(horizon) * int(n_simulations) * int(degrees_freedom) > 20000000:
-    st.sidebar.error("O produto entre Horizonte de Tempo, Graus de Liberdade e Número de Simulações não pode exceder 20.000.000 Por favor, ajuste os valores.")
-    st.stop()
+# Definir o ticker da ação A
+ticker_a = st.sidebar.text_input('Ticker do Ativo A', 'PETR4.SA')
+# Definir o peso do ativo A na carteira
+weight_a = st.sidebar.text_input('Peso do Ativo A', 0)
 
-# Título da página
-st.title('Análise de Risco e Retorno de Portifólio de Ações')
+# Definir o ticker da ação B
+ticker_b = st.sidebar.text_input('Ticker do Ativo B', 'VALE3.SA')
+# Definir o peso do ativo B na carteira
+weight_b = st.sidebar.text_input('Peso do Ativo B', 1)
 
-# Título da seção de dados
-st.sidebar.markdown('## Período para o Histórico')
-
-# Período de análise dos dados históricos
-col3, col4 = st.sidebar.columns(2)
-
-with col3:
-    inicio = st.text_input('Data de Início', '2010-01-01')
-
-with col4:
-    fim = st.text_input('Data de Fim', '2024-10-31')
-
-# Título da seção de dados
-st.sidebar.markdown('## Dados dos Ativos')
-
-# Ticker e peso dos ativos
-col1, col2 = st.sidebar.columns(2)
-
-#colocar 6 tickers das principais ações da B3
-s_tickers = ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC4.SA', 'ABEV3.SA', 'BBAS3.SA']
-s_weights = [1.0] * 6
-
-tickers = []
-weights = []
-for i in range(6):
-    with col1:
-        ticker = st.text_input(f'Ticker do Ativo {i+1}', s_tickers[i-1])
-        tickers.append(ticker)
-    with col2:
-        weight = st.text_input(f'Peso do Ativo {i+1}', f'{s_weights[i-1]:.4}')
-        weights.append(weight)
-
+# Definir o período de análise
+inicio = st.sidebar.text_input('Data de Início', '2010-01-01')
+fim = st.sidebar.text_input('Data de Fim', '2024-10-31')
 
 # definir layout em 2 colunas dados, graficos
 container = st.container()
 col_dados, col_graficos = container.columns(2)
 
-# documentar o processo em markdown
-md = """
+# Criar um botão que atualiza a simulação
+def executar_simulacao():
+    
+    # Baixar os dados históricos
+    dados_a = yf.download(ticker_a, start=inicio, end=fim)
+    dados_b = yf.download(ticker_b, start=inicio, end=fim)
 
-## Introdução
+    # Calcular os retornos diários para dados_a
+    dados_a['Retorno'] = dados_a['Adj Close'].pct_change()
+    dados_a = dados_a.dropna()
+    retorno_medio_diario_a = dados_a['Retorno'].mean()
+    volatilidade_diaria_a = dados_a['Retorno'].std()
 
-A Simulação de Monte Carlo é uma técnica utilizada para modelar sistemas complexos e incertos, permitindo a \
-análise de resultados em diferentes cenários aleatórios. Neste projeto, utiliza-se a simulação de Monte Carlo \
-para analisar o risco e retorno de um portifólio de ações. Assim, foi escolhida a distribuição t Student para
-estimar o Value at Risk (VaR) de um portifólio de ações.
+    # Calcular os retornos diários para dados_b
+    dados_b['Retorno'] = dados_b['Adj Close'].pct_change()
+    dados_b = dados_b.dropna()
+    retorno_medio_diario_b = dados_b['Retorno'].mean()
+    volatilidade_diaria_b = dados_b['Retorno'].std()
 
-## Fundamentação
+    col_dados.write(f"Retorno médio diário da ação {ticker_a} entre {inicio} e {fim}: {retorno_medio_diario_a:.5%}")
 
-A distribuição t de Student é uma distribuição de probabilidade contínua que surge quando se estima a média \
-de uma população normalmente distribuída, mas a variância populacional é desconhecida e substituída pela \
-variância amostral. Ela é particularmente útil em amostras de pequeno tamanho, onde a incerteza sobre a \
-variância populacional é maior.
+    col_dados.write(f"Volatilidade diária da ação {ticker_a}: {volatilidade_diaria_a:.5%}")
 
-Matematicamente, a distribuição t de Student com __𝜈__ graus de liberdade é definida pela função de densidade de \
-probabilidade:"""
+    col_dados.write(f"Retorno médio diário da ação {ticker_b} entre {inicio} e {fim}: {retorno_medio_diario_b:.5%}")
 
-col_dados.markdown(md)
+    col_dados.write(f"Volatilidade diária da ação {ticker_b}: {volatilidade_diaria_b:.5%}")
 
-latex_code = r"""
-f(t) = \frac{\Gamma \left( \frac{\nu + 1}{2} \right)}{\sqrt{\nu \pi} \Gamma \left( \frac{\nu}{2} \right)} \left( 1 + \frac{t^2}{\nu} \right)^{-\frac{\nu + 1}{2}}
-"""
-col_dados.latex(latex_code)
+    # Parâmetros da distribuição t de Student para os retornos dos ativos
+    df_A = int(degrees_freedom)  # Graus de liberdade do ativo A
+    loc_A = retorno_medio_diario_a  # Média do retorno diário do ativo A
+    scale_A = volatilidade_diaria_a  # Desvio padrão do retorno diário do ativo A
+    df_B = 5  # Graus de liberdade do ativo B
+    loc_B = retorno_medio_diario_b  # Média do retorno diário do ativo B
+    scale_B = volatilidade_diaria_b  # Desvio padrão do retorno diário do ativo B
 
+    # Simulação dos retornos diários dos ativos
+    n_s = int(n_simulations)
+    n_h = int(horizon)
 
-md = """\\
-onde __Γ__ é a função gama e __𝜈__ representa os graus de liberdade.
+    returns_A = t.rvs(df=df_A, loc=loc_A, scale=scale_A, size=(n_s, n_h))
+    returns_B = t.rvs(df=df_B, loc=loc_B, scale=scale_B, size=(n_s, n_h))
 
-Em análises financeiras, o modelo de distribuição normal é frequentemente usado para representar os retornos \
-de ativos. Contudo, dados reais mostram que esses retornos geralmente têm "caudas pesadas", ou seja, eventos \
-extremos (grandes perdas ou ganhos) acontecem com mais frequência do que o previsto pela curva normal.
+    # Cálculo dos retornos diários da carteira
+    w_a = float(weight_a)
+    w_b = float(weight_b)
+    portfolio_returns = w_a * returns_A + w_b * returns_B
 
-A distribuição t de Student é uma alternativa melhor nesse caso, pois acomoda essas caudas pesadas, capturando \
-melhor a chance de eventos extremos. Isso leva a estimativas de risco mais precisas, especialmente para métricas \
-como o VaR, que são influenciadas por esses eventos.
+    # Cálculo dos retornos acumulados da carteira para o horizonte de tempo
+    cumulative_returns = np.prod(1 + portfolio_returns, axis=1) - 1
 
-O VaR é uma medida estatística que quantifica a perda potencial máxima esperada de um portfólio \
-em um determinado horizonte de tempo, para um dado nível de confiança. Assim, considerando-se um VaR de -0,50 \
-com 95% de confiança para 365 dias, por exemplo, significa que há 95% de confiança de que a perda não excederá \
-50% do valor do portfólio ao longo dos próximos 365 dias. Da mesma forma, há uma probabilidade de 5% de que a \
-perda seja superior a 50% nesse período.
+    # Cálculo do VaR (95% de confiança)
+    VaR = np.percentile(cumulative_returns, 5)
 
+    # Impressão do resultado
+    col_dados.write(f'VaR (95% de confiança) para {horizon} dias: {VaR:.4f}')
 
-## Metodologia
-
-Para realizar a análise de risco e retorno do portifólio de ações, foram seguidos os seguintes passos:
-
-1. Definição dos parâmetros da simulação: 
-    * Horizonte de Tempo: número de dias para o cálculo dos retornos acumulados da carteira.
-    * Graus de liberdade: Graus de liberdade da distribuição t de Student
-    * Nível de confiança para o VaR 
-    * Número de simulações de Monte Carlo.
-
-2. Coleta dos dados históricos dos ativos: os preços de fechamento ajustados dos ativos foram baixados do Yahoo \
-Finance para o período especificado.
-
-3. Cálculo dos retornos diários dos ativos: os retornos diários são calculados com base nos preços de fechamento \
-ajustados.
-
-4. Estimação dos parâmetros da distribuição t de Student: para cada ativo, foram calculados o retorno médio diário \
-e a volatilidade média diária.
-
-5. Simulação de Monte Carlo: são realizadas simulações de Monte Carlo para gerar cenários de retornos futuros \
-para cada ativo, com base na distribuição t de Student.
-
-6. Cálculo dos retornos diários da carteira: os retornos diários da carteira foram calculados como a soma dos retornos \
-diários dos ativos, ponderados pelos pesos especificados.
-
-7. Cálculo dos retornos acumulados da carteira: os retornos acumulados da carteira para o horizonte de tempo \
-especificado foram calculados.
-
-8. Cálculo do VaR: o VaR para o horizonte de tempo especificado foi calculado com base na distribuição dos retornos \
-acumulados da carteira.
-
-9. Análise dos resultados: os resultados foram apresentados em termos de VaR e distribuição dos retornos acumulados \
-da carteira.
-
-10. A simulação também é feita utilizando-se uma normal permitindo a comparação dos resultados de ambas as distribuições.
-
-## Resultados
-
-A principal diferença observada ao utilizar a distribuição t de Student é o aumento da probabilidade de eventos \
-extremos devido às suas caudas mais pesadas. Isso resulta em um VaR mais conservador (ou seja, uma perda potencial \
-maior) em comparação com a distribuição normal. No contexto da gestão de riscos, isso significa que o modelo está \
-levando em consideração a maior chance de ocorrerem perdas significativas, proporcionando uma estimativa de \
-risco mais realista.
-"""
-col_dados.markdown(md)
-
-   
-# Filtrar tickers e pesos válidos
-valid_tickers = [ticker for ticker in tickers if ticker]
-valid_weights = [float(weights[i]) for i in range(len(tickers)) if tickers[i]]
-
-# Normalizar os pesos para somarem 1
-total_weight = sum(valid_weights)
-normalized_weights = [weight / total_weight for weight in valid_weights]
-
-# Baixar os dados históricos
-dados = {}
-for ticker in valid_tickers:
-    dados[ticker] = yf.download(ticker, start=inicio, end=fim)
-
-# Calcular os retornos diários para cada ativo
-retornos = {}
-for ticker, weight in zip(valid_tickers, normalized_weights):
-    dados[ticker]['Retorno'] = dados[ticker]['Adj Close'].pct_change()
-    dados[ticker] = dados[ticker].dropna()
-    retornos[ticker] = {
-        'Retorno Médio Diário': dados[ticker]['Retorno'].mean(),
-        'Volatilidade Média Diária': dados[ticker]['Retorno'].std(),
-        'Peso Normalizado': weight
-    }
-
-# Criar um DataFrame com os resultados
-resultados = pd.DataFrame(retornos).T.reset_index().rename(columns={'index': 'Ticker'})
-
-# Exibir o DataFrame na coluna de dados sem o índice
-col_graficos.write(resultados)
-
-# Parâmetros da distribuição t de Student para os retornos dos ativos
-n_s = int(n_simulations)
-n_h = int(horizon)
-
-simulated_returns_t = []
-simulated_returns_normal = []
-
-for i, ticker in enumerate(valid_tickers):
-    loc = retornos[ticker]['Retorno Médio Diário']
-    scale = retornos[ticker]['Volatilidade Média Diária']
-    peso = retornos[ticker]['Peso Normalizado']
-
-    # simular com normal
-    simulated_returns_normal.append(peso * np.random.normal(loc=loc, scale=scale, size=(n_s, n_h)))
-
-    # simular com t-Student
-    df = int(degrees_freedom)
-    simulated_returns_t.append(peso * t.rvs(df=df, loc=loc, scale=scale, size=(n_s, n_h)))
+    # Histograma dos retornos acumulados da carteira
+    fig, ax = plt.subplots()
+    ax.hist(cumulative_returns, bins=50)
+    ax.set_xlabel('Retorno Acumulado da Carteira')
+    ax.set_ylabel('Frequência')
+    ax.set_title(f'Distribuição dos Retornos da Carteira ({horizon} dias)')
+    col_graficos.pyplot(fig)
 
 
-
-# Cálculo dos retornos diários da carteira
-portfolio_returns = np.sum(simulated_returns_t, axis=0)
-cumulative_returns = np.prod(1 + portfolio_returns, axis=1) - 1
-VaR = np.percentile(cumulative_returns, 100 - float(confidence_level))
-col_graficos.markdown(f'VaR - t de Student ({confidence_level}% de confiança) para {horizon} dias: __{VaR:.4%}__')
-
-# calculo com a simulacao da normal
-portfolio_returns_normal = np.sum(simulated_returns_normal, axis=0)
-cumulative_returns_normal = np.prod(1 + portfolio_returns_normal, axis=1) - 1
-VaR_normal = np.percentile(cumulative_returns_normal, 100 - float(confidence_level))
-col_graficos.markdown(f'VaR - Normal ({confidence_level}% de confiança) para {horizon} dias: __{VaR_normal:.4%}__')
-
-# Histograma dos retornos acumulados da carteira com t-Student e Normal
-fig = px.histogram(
-    pd.DataFrame({'t de Student':cumulative_returns, 'Normal':cumulative_returns_normal}), 
-    nbins=200, 
-    opacity=0.5, 
-    labels={'value': 'Retorno Acumulado da Carteira'}, 
-    title=f'Distribuição dos Retornos da Carteira ({horizon} dias)',
-)
-
-fig.update_layout(
-    xaxis_title='Retorno Acumulado da Carteira', 
-    yaxis_title='Frequência', 
-    showlegend=True,
-    legend=dict(title='Distribuição', itemsizing='constant'),
-)
-
-fig.add_vline(x=VaR, line_width=3, line_dash="dash", line_color="green", annotation_text='VaR t-Student', annotation_position="top left")
-fig.add_vline(x=VaR_normal, line_width=3, line_dash="dash", line_color="red", annotation_text='VaR Normal', annotation_position="top right")
-
-col_graficos.plotly_chart(fig)
+executar_simulacao()
